@@ -6,6 +6,16 @@ Aplicación educativa para explorar filtros espaciales, diseñar máscaras y dem
 
 Las imágenes se procesan en el navegador con Canvas, ImageData y un Web Worker. El proyecto no tiene backend ni sube archivos. El servidor de Vite solo sirve los archivos de la aplicación durante el desarrollo.
 
+## Publicación en GitHub Pages
+
+Dirección del sitio: [Visual Convolution Lab](https://alejonavas24.github.io/proyecto-1-computacion-visual/).
+
+El workflow `.github/workflows/deploy-pages.yml` publica la aplicación al hacer push a `main` y también permite ejecutar el despliegue manualmente desde la pestaña **Actions** del repositorio.
+
+Antes de publicar, instala las dependencias con `npm ci`, ejecuta las pruebas y genera `dist/`. La publicación utiliza Node.js 24 y configura automáticamente `VITE_BASE_PATH=/proyecto-1-computacion-visual/` para servir correctamente los recursos y el Web Worker dentro de la ruta del repositorio. En desarrollo local se conserva la ruta `/`.
+
+El repositorio debe tener **Settings → Pages → Source → GitHub Actions**. Puedes consultar el estado de cada despliegue en [GitHub Actions](https://github.com/Alejonavas24/proyecto-1-computacion-visual/actions).
+
 ## Objetivo académico
 
 Relacionar la representación digital de una imagen con la operación matemática que transforma cada píxel. El laboratorio permite formular una hipótesis sobre un kernel, aplicarlo y comprobar sus productos y sumas en una coordenada concreta.
@@ -40,7 +50,7 @@ No se necesitan claves, variables de entorno, cuentas ni conexión a servicios d
 
 ### 1. Laboratorio de filtros
 
-- Nueve filtros implementados con operaciones sobre los píxeles.
+- Cinco filtros: desenfoque promedio, desenfoque gaussiano, Sobel X, Sobel Y y magnitud Sobel.
 - Imagen original y resultado lado a lado; modos de alternancia y deslizador antes/después.
 - Zoom de 100 % a 400 %, desplazamiento mediante las barras del visor y restablecimiento de vista.
 - Carga por selector o arrastrando un PNG/JPG/JPEG sobre la zona de carga.
@@ -56,7 +66,7 @@ Cada filtro parte de la **imagen original cargada**, no del resultado anterior. 
 
 - Matrices editables 3×3 y 5×5.
 - Coeficientes enteros, negativos, decimales y notación científica mediante entradas numéricas.
-- Presets de los filtros individuales, identidad 5×5 y promedio 5×5 con normalización activada.
+- Presets de desenfoque y Sobel individuales, y promedio 5×5 con normalización activada.
 - Suma de coeficientes y normalización opcional por esa suma.
 - Restablecimiento a identidad y copia de la matriz efectiva normalizada.
 - Aplicación explícita: editar una celda no dispara una convolución; se procesa al pulsar **Aplicar máscara**.
@@ -78,7 +88,7 @@ La región ampliada sirve para recorrer la imagen; **no crea nuevos bordes** par
 
 ### 4. Conceptos y teoría
 
-Explicaciones con ejemplos sobre imagen digital, píxel, RGB/RGBA, matrices, kernels, convolución y correlación, filtros espaciales, Sobel, desenfoque, enfoque, normalización, bordes, precisión y aplicaciones. Incluye una guía de los nueve filtros y un ejemplo numérico resuelto.
+Explicaciones con ejemplos sobre imagen digital, píxel, RGB/RGBA, matrices, kernels, convolución y correlación, filtros espaciales, Sobel, desenfoque, normalización, bordes, precisión y aplicaciones. Incluye una guía de los cinco filtros y un ejemplo numérico resuelto.
 
 ## Tecnologías
 
@@ -104,7 +114,7 @@ src/
     ImageUploader.jsx          Selector, drop y acciones de imagen
     ImageCanvas.jsx            Representación de ImageData y selección
     ImageComparison.jsx        Comparador, zoom y descarga
-    FilterSelector.jsx         Catálogo de los nueve filtros
+    FilterSelector.jsx         Catálogo de desenfoques y Sobel
     FilterExplanation.jsx      Kernel, fórmula y copia
     ProcessingControls.jsx     Bordes, canales y visualización
     KernelMatrix.jsx           Matrices de lectura y edición
@@ -205,7 +215,7 @@ Con signo:     clamp(round(128 + v · g), 0, 255)
 Absoluto:      clamp(round(abs(v) · g), 0, 255)
 ```
 
-`offset` es 128 para relieve y 0 para los otros filtros. Se aplica solo en modo recorte. La ganancia es un factor de visualización, **no** una interpolación con el original ni una modificación del kernel. Los modos con signo y absoluto ignoran el offset de relieve.
+Los filtros disponibles usan `offset = 0`. La ganancia es un factor de visualización, **no** una interpolación con el original ni una modificación del kernel.
 
 La representación con signo permite distinguir respuestas positivas y negativas alrededor del gris 128. Como cualquier PNG de 8 bits, puede saturarse; el valor completo sigue disponible en el inspector y en los flotantes del worker. Reducir la ganancia permite ver un rango mayor.
 
@@ -215,17 +225,15 @@ Las siguientes matrices son los kernels **originales**, antes del giro:
 
 | Filtro | Kernel / cálculo | Uso y visualización inicial |
 | --- | --- | --- |
-| Identidad | `[0,0,0; 0,1,0; 0,0,0]` | Comprobar el original; recorte |
 | Promedio | `1/9 · [1,1,1; 1,1,1; 1,1,1]` | Suavizado uniforme; recorte |
 | Gaussiano | `1/16 · [1,2,1; 2,4,2; 1,2,1]` | Suavizado con mayor peso central; recorte |
-| Enfoque | `[0,−1,0; −1,5,−1; 0,−1,0]` | Realzar detalles; recorte |
 | Sobel X | `[1,0,−1; 2,0,−2; 1,0,−1]` | Cambios a lo largo de X, contornos verticales; con signo |
 | Sobel Y | `[1,2,1; 0,0,0; −1,−2,−1]` | Cambios a lo largo de Y, contornos horizontales; con signo |
 | Magnitud Sobel | `sqrt(Gx² + Gy²)` con ambos kernels | Contornos en todas las direcciones; recorte |
-| Laplaciano | `[0,1,0; 1,−4,1; 0,1,0]` | Segunda derivada y discontinuidades; con signo |
-| Relieve | `[2,1,0; 1,1,−1; 0,−1,−2]` | Efecto direccional; recorte con offset 128 |
 
 Los signos de Sobel están elegidos para **convolución real**: una rampa que crece hacia la derecha produce Gx positivo; una que crece hacia abajo produce Gy positivo. La magnitud se calcula por canal en RGB o sobre la luminancia cuando se activa grises.
+
+La identidad se conserva como operación interna para restablecer el original y reiniciar la matriz del editor; no se ofrece en el catálogo de filtros.
 
 ## Ejemplos para explicar en clase
 
@@ -261,7 +269,7 @@ Para `I(x,y) = 30x + 40y`, en una posición interior, Sobel produce `Gx = 240`, 
 
 ### Demostración sugerida
 
-1. Abre el laboratorio con el ejemplo local y compara promedio, enfoque y magnitud Sobel.
+1. Abre el laboratorio con el ejemplo local y compara promedio, gaussiano y magnitud Sobel.
 2. Entra al visualizador, elige Sobel X y el canal rojo. Haz clic en un borde vertical.
 3. Muestra el kernel original, su giro, las intensidades y la suma de productos. Prueba el modo con signo.
 4. Selecciona la esquina `(0,0)` y cambia entre réplica, reflexión y ceros.
@@ -291,7 +299,7 @@ npm run test
 npm run build
 ```
 
-La suite contiene **71 pruebas** y cubre:
+La suite de pruebas cubre:
 
 - Identidad 3×3/5×5, dimensiones, cuatro canales, alfa y ausencia de mutaciones.
 - Promedio en color uniforme y normalización.
@@ -306,7 +314,7 @@ La suite contiene **71 pruebas** y cubre:
 - Límite de resolución y ausencia de ampliación.
 - Procesamiento y reutilización de flotantes en un worker real de Node mediante un adaptador de la API de mensajes; errores controlados y búfer original preservado.
 
-Verificado en el entorno de desarrollo: instalación, 71 pruebas, build de Vite y respuesta HTTP 200 del servidor local. **No se completó la revisión visual ni la interacción en Chrome**: Computer Use detuvo el acceso al no poder identificar con suficiente confianza la URL del navegador. Las pruebas del worker en Node no sustituyen la validación de Canvas, selector de archivos, descarga, animación y responsive en un navegador real.
+Verificado en el entorno de desarrollo: instalación, pruebas automatizadas, build de Vite y respuesta HTTP 200 del servidor local. **No se completó la revisión visual ni la interacción en Chrome**: Computer Use detuvo el acceso al no poder identificar con suficiente confianza la URL del navegador. Las pruebas del worker en Node no sustituyen la validación de Canvas, selector de archivos, descarga, animación y responsive en un navegador real.
 
 Para completar esa revisión manual, usa la demostración sugerida y comprueba además una imagen vertical, un PNG semitransparente, un JPEG, un archivo inválido, el drop, el deslizador, el zoom, la copia y una ventana de 375 px de ancho.
 

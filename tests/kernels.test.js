@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { kernelSum, parseKernelDraft, prepareKernel, validateKernel } from '../src/core/convolution.js'
-import { FILTERS, identityKernel } from '../src/core/kernels.js'
+import { FILTERS, getFilter, identityKernel } from '../src/core/kernels.js'
 
 describe('Máscaras predeterminadas y personalizadas', () => {
-  it('incluye los nueve filtros, todos con matrices válidas', () => {
-    expect(FILTERS).toHaveLength(9)
-    expect(new Set(FILTERS.map(f => f.id)).size).toBe(9)
+  it('ofrece únicamente los dos desenfoques y los tres filtros Sobel', () => {
+    expect(FILTERS.map(filter => filter.id)).toEqual(['average', 'gaussian', 'sobel-x', 'sobel-y', 'sobel'])
     FILTERS.forEach(filter => {
       expect(() => validateKernel(filter.kernel)).not.toThrow()
       expect(filter.description.length).toBeGreaterThan(20)
@@ -13,10 +12,10 @@ describe('Máscaras predeterminadas y personalizadas', () => {
       expect(filter.application.length).toBeGreaterThan(20)
     })
   })
-  it.each(['identity', 'average', 'gaussian', 'sharpen'])('%s suma 1', id => {
-    expect(kernelSum(FILTERS.find(f => f.id === id).kernel)).toBeCloseTo(1, 14)
+  it.each(['identity', 'average', 'gaussian'])('%s suma 1', id => {
+    expect(kernelSum(getFilter(id).kernel)).toBeCloseTo(1, 14)
   })
-  it.each(['sobel-x', 'sobel-y', 'laplacian'])('%s suma cero', id => {
+  it.each(['sobel-x', 'sobel-y'])('%s suma cero', id => {
     expect(kernelSum(FILTERS.find(f => f.id === id).kernel)).toBe(0)
   })
   it('normalizar una máscara de suma cero produce un error controlado', () => {

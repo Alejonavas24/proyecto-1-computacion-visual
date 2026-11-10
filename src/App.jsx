@@ -27,8 +27,8 @@ export default function App() {
     description: 'Aplica los coeficientes definidos en el editor.',
     math: 'I′(x,y) = Σ I(x−i,y−j) K(i,j). La máscara se gira 180° antes de multiplicar.',
     application: 'Evaluar el efecto de coeficientes personalizados.',
-  } : getFilter(selected), [selected, custom])
-  const config = useMemo(() => ({ ...settings, kernel: filter.kernel, magnitude: selected === 'sobel', normalize: selected === 'custom' ? custom.normalize : false, offset: filter.offset ?? 0 }), [settings, filter, selected, custom])
+  } : getFilter(selected) ?? getFilter('sobel'), [selected, custom])
+  const config = useMemo(() => ({ ...settings, kernel: filter.kernel, magnitude: filter.id === 'sobel', normalize: filter.id === 'custom' ? custom.normalize : false, offset: 0 }), [settings, filter, custom])
   const processing = useImageProcessor(source?.image, config)
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(''), 4500); return () => clearTimeout(id) }, [toast])
   function navigate(next) { setPage(next); window.scrollTo({ top: 0, behavior: 'instant' }) }

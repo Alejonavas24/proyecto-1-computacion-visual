@@ -23,8 +23,7 @@ export default function KernelEditor({ image, result, busy, config, filter, onAp
   function loadPreset(id) {
     setPreset(id)
     if (!id) return
-    if (id === 'identity5') loadKernel(identityKernel(5))
-    else if (id === 'average5') { loadKernel(Array.from({ length: 5 }, () => Array(5).fill(1))); setNormalize(true) }
+    if (id === 'average5') { loadKernel(Array.from({ length: 5 }, () => Array(5).fill(1))); setNormalize(true) }
     else loadKernel(FILTERS.find(item => item.id === id).kernel)
   }
   const dirty = JSON.stringify(validation.kernel) !== JSON.stringify(config.kernel) || normalize !== config.normalize || filter.id !== 'custom'
@@ -32,7 +31,7 @@ export default function KernelEditor({ image, result, busy, config, filter, onAp
     {uploader}
     <div className="editor-workspace"><section className="panel editor-panel"><div className="panel-heading"><h2>Máscara personalizada</h2><Grid2X2 size={17} /></div>
       <div className="segmented size-selector" role="group" aria-label="Tamaño de matriz">{[3, 5].map(size => <button key={size} className={draft.length === size ? 'active' : ''} aria-pressed={draft.length === size} onClick={() => { loadKernel(identityKernel(size)); setPreset('') }}>{size} × {size}</button>)}</div>
-      <label className="field-label">Cargar una máscara<select value={preset} onChange={event => loadPreset(event.target.value)}><option value="">Selecciona una máscara</option>{FILTERS.filter(item => !item.secondaryKernel).map(item => <option key={item.id} value={item.id}>{item.name} · 3×3</option>)}<option value="identity5">Identidad · 5×5</option><option value="average5">Promedio (unos) · 5×5</option></select></label>
+      <label className="field-label">Cargar una máscara<select value={preset} onChange={event => loadPreset(event.target.value)}><option value="">Selecciona una máscara</option>{FILTERS.filter(item => !item.secondaryKernel).map(item => <option key={item.id} value={item.id}>{item.name} · 3×3</option>)}<option value="average5">Promedio (unos) · 5×5</option></select></label>
       <div className="editor-matrix-area"><KernelMatrix kernel={draft} editable onChange={(y, x, value) => setDraft(rows => rows.map((row, rowIndex) => rowIndex === y ? row.map((cell, column) => column === x ? value : cell) : row))} /></div>
       <div className="kernel-stats"><span>Suma de coeficientes</span><strong>{formatNumber(validation.sum, 6)}</strong></div>
       <label className="checkbox-label"><input type="checkbox" checked={normalize} onChange={event => setNormalize(event.target.checked)} />Normalizar por la suma</label>

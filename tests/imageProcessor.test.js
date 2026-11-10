@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { inspectProcessedPixel, processingDimensions, processImage, MAX_PIXELS, MAX_SIDE } from '../src/core/imageProcessor.js'
 import { displayValue } from '../src/core/pixelUtils.js'
-import { FILTERS } from '../src/core/kernels.js'
+import { FILTERS, ORIGINAL_FILTER } from '../src/core/kernels.js'
 import { at, makeImage } from './helpers.js'
 
 const configFor = (filter, changes = {}) => ({ kernel: filter.kernel, magnitude: filter.id === 'sobel', border: 'replicate', normalize: false, grayscale: false, displayMode: filter.mode, gain: 1, offset: filter.offset ?? 0, ...changes })
@@ -20,7 +20,7 @@ describe('Procesamiento, visualización y precisión del inspector', () => {
     expect(result.max).toBe(400)
   })
 
-  it.each(FILTERS.map(filter => [filter.id, filter]))('el inspector coincide exactamente con %s en cada canal y cada píxel', (_, filter) => {
+  it.each([ORIGINAL_FILTER, ...FILTERS].map(filter => [filter.id, filter]))('el inspector coincide exactamente con %s en cada canal y cada píxel', (_, filter) => {
     const image = makeImage(4, 3, (x, y) => [x * 30 + y * 7, x * 5 + y * 50, (x + y) * 13, (x + y) * 23])
     for (const border of ['replicate', 'reflect', 'zero']) {
       for (const grayscale of [false, true]) {
@@ -37,7 +37,7 @@ describe('Procesamiento, visualización y precisión del inspector', () => {
 
   it('el inspector 5×5 coincide con normalización y un borde de ceros', () => {
     const image = makeImage(3, 2, (x, y) => [21 + x, 50 + y, 71, 127])
-    const config = configFor(FILTERS[0], { kernel: Array.from({ length: 5 }, () => Array(5).fill(1)), normalize: true, border: 'zero', displayMode: 'signed', gain: .25 })
+    const config = configFor(ORIGINAL_FILTER, { kernel: Array.from({ length: 5 }, () => Array(5).fill(1)), normalize: true, border: 'zero', displayMode: 'signed', gain: .25 })
     const output = processImage(image, config)
     const inspection = inspectProcessedPixel(image, config, 0, 0, 1)
     expect(inspection.primary.terms).toHaveLength(25)
@@ -59,7 +59,7 @@ describe('Procesamiento, visualización y precisión del inspector', () => {
 
   it('la identidad produce una imagen PNG equivalente y conserva dimensiones/canales', () => {
     const image = makeImage(3, 4, (x, y) => [x * 33, y * 30, 14, x * 47])
-    const output = processImage(image, configFor(FILTERS[0]))
+    const output = processImage(image, configFor(ORIGINAL_FILTER))
     expect(output.image.data).toEqual(image.data)
     expect(output.image.width).toBe(3)
     expect(output.image.height).toBe(4)
